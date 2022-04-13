@@ -1,0 +1,23 @@
+{
+    "name": "darkaxi0m/propel-view",
+    "description": "Overly Simple PropelORM Schema and Database Tool",
+    "type": "library",
+    "license": "TBA",
+    "authors": [
+        {
+            "name": "Chris Chase",
+            "email": "chris@accede.com.au"
+        }
+    ],
+    "require": {
+        "php" : ">=7.3",
+		"propel/propel": "~2.0@dev",
+		"slim/slim" : "^3.1"
+	
+    },
+    "autoload": {
+        "psr-4": {
+            "DarkAxi0m\\PropelView\\": "src"
+        }
+    }
+}
