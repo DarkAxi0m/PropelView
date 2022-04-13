@@ -2,7 +2,7 @@
     "name": "darkaxi0m/propel-view",
     "description": "Overly Simple PropelORM Schema and Database Tool",
     "type": "library",
-    "license": "TBA",
+    "license": "MIT",
     "authors": [
         {
             "name": "Chris Chase",
