@@ -4,17 +4,33 @@ namespace DarkAxi0m\PropelView;
 class PropelViewController 
 {
 
-    static function routes($route)
+	protected $container;
+    public function __construct($container)
     {
-        $route->get('[/]', 'PropelViewController:index')->setName('propelview');
-        $route->get('/{table}', 'PropelViewController:index')->setName('propelview.table');
+        $this->container = $container;
     }
-
-    static function depends($container)
+    public function __get($property)
     {
-        $container['PropelViewController']  = function ($container) {
-            return new PropelViewController($container);
+        if ($this->container->{$property}) {
+            return  $this->container->{$property};
+        }
+    }
+    public static function dependencies(\Slim\App $app, $named = null)
+    {
+        $container = $app->getContainer();
+        if (empty($named))
+            $named = (new \ReflectionClass(static::class))->getShortName();
+		$container[$named] = function ($container) {
+            return new static($container);
         };
+    }
+	
+	
+    public static function routes($route)
+    {
+		$named = (new \ReflectionClass(static::class))->getShortName();
+        $route->get('[/]', $named .':index')->setName('propelview');
+        $route->get('/{table}', $named .':index')->setName('propelview.table');
     }
 
     public function index($request, $response, $args)
