@@ -38,7 +38,9 @@ class PropelViewController
 
       //This is all just an idea right now, 
         $serviceContainer = \Propel\Runtime\Propel::getServiceContainer();
-
+        $columns='';
+        $samplehead='';
+        $sample='';
         $tables =  [];
 
         foreach ($serviceContainer->getDatabaseMap()->getTables() as $key => $table) {
@@ -128,7 +130,7 @@ HEAD;
     <meta name="description" content="">
     <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
     <meta name="generator" content="Hugo 0.88.1">
-    <title>Proepl View -  $tablename </title>
+    <title>Propel View -  $tablename </title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
 
         
