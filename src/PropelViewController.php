@@ -1,46 +1,49 @@
 <?php
-
 namespace DarkAxi0m\PropelView;
 
-class PropelViewController extends PVController
+class PropelViewController 
 {
 
- 
-  public static function dependencies(\Slim\App $app, $named = null)
-  {
-    $container = $app->getContainer();
-    if (empty($named))
-      $named = (new \ReflectionClass(static::class))->getShortName();
-    $container[$named] = function ($container) {
-      return new static($container);
-    };
-    $container['PropelViewHelper'] = function ($container) {
-      return new PropelViewHelper($container);
-    };
-  }
+	protected $container;
+    public function __construct($container)
+    {
+        $this->container = $container;
+    }
+    public function __get($property)
+    {
+        if ($this->container->{$property}) {
+            return  $this->container->{$property};
+        }
+    }
+    public static function dependencies(\Slim\App $app, $named = null)
+    {
+        $container = $app->getContainer();
+        if (empty($named))
+            $named = (new \ReflectionClass(static::class))->getShortName();
+		$container[$named] = function ($container) {
+            return new static($container);
+        };
+    }
+	
+	
+    public static function routes($route)
+    {
+		$named = (new \ReflectionClass(static::class))->getShortName();
+        $route->get('[/]', $named .':index')->setName('propelview');
+        $route->get('/{table}', $named .':index')->setName('propelview.table');
+    }
 
+    public function index($request, $response, $args)
+    {
 
-  public static function routes($route)
-  {
-    $named = (new \ReflectionClass(static::class))->getShortName();
-    $route->get('[/]', $named . ':index')->setName('propelview');
-    $route->get('/{table}', $named . ':index')->setName('propelview.table');
-  }
+      //This is all just an idea right now, 
+        $serviceContainer = \Propel\Runtime\Propel::getServiceContainer();
 
+        $tables =  [];
 
-
-  public function index($request, $response, $args)
-  {
-
-    //This is all just an idea right now, 
-    $serviceContainer = \Propel\Runtime\Propel::getServiceContainer();
-    $columnstable = '';
-    $sampletable = '';
-    $tables =  [];
-
-    foreach ($serviceContainer->getDatabaseMap()->getTables() as $key => $table) {
-      $url = $this->router->pathFor('propelview.table', ['table' => $table->getPhpName()]);
-      $tables[] = <<<TABLES
+        foreach ($serviceContainer->getDatabaseMap()->getTables() as $key => $table) {
+            $url = $this->router->pathFor('propelview.table', ['table' => $table->getPhpName()]);
+            $tables[] = <<<TABLES
 <li class="nav-item">
     <a class="nav-link" href="$url">
         <span data-feather="bar-chart-2"></span>
@@ -48,23 +51,74 @@ class PropelViewController extends PVController
     </a>
 </li>
 TABLES;
-    }
+        }
 
-    $tables = implode('', $tables);
-    $tablename = '';
-    if (isset($args['table'])) {
+        $tables = implode('', $tables);
+        $tablename = '';
+        if (isset($args['table'])) {
 
-      $tablename = $args['table'];
-      $tablemapClass = "\Map\\{$tablename}TableMap";
-      $queryClass = "\\{$tablename}Query";
+            $tablename = $args['table'];
+            $tablemapClass = "\Map\\{$tablename}TableMap";
+            $queryClass = "\\{$tablename}Query";
 
-      $map = new   $tablemapClass();
+            $map = new   $tablemapClass();
+            try {
+                $query = $queryClass::create()->limit(10)->find();
+            } catch (\Throwable $th) {
+                $query = $th->getMessage();
+            }
+            // d($map);
 
-     
-      $columnstable = $this->PropelViewHelper->ColumnsTable($map);
-      $sampletable =  $this->PropelViewHelper->SampleTable($map, $queryClass::create());
-    }
-    echo <<<HTML
+            $columns = [];
+            $samplehead = [];
+            foreach ($map->getColumns() as $column) {
+                // d($column);
+                $fk  = $column->isForeignKey() ? '<span title="ForeignKey">🔐</span>' : '';
+                $pk  = $column->isPrimaryKey() ? '<span title="PrimaryKey">🔑</span>' : '';
+                $null  = $column->isNotNull() ? 'NotNull' : 'Nullable';
+
+                $class = '';
+                if ($column->isPrimaryKey())
+                    $class .= 'table-warning ';
+                if ($column->isForeignKey())
+                    $class .= 'table-info ';
+
+                $columns[] = <<<COL
+            <tr class="$class">
+                <td>$pk $fk {$column->getPhpName()}</td>
+                <td>{$column->getFullyQualifiedName()}</td>
+                <td>{$column->getType()}</td>
+                <td>{$column->getSize()}</td>
+                <td>$null</td>
+                <td></td>
+              </tr>
+            
+COL;
+
+                $samplehead[] = <<<HEAD
+                <th scope="col">$pk $fk {$column->getPhpName()}</th>
+HEAD;
+            }
+
+            $columns = implode('', $columns);
+            $samplehead = implode('', $samplehead);
+
+            if (is_array($query)) {
+                $sample = [];
+                foreach ($query  as $key => $row) {
+                    $rowstr = '<tr>';
+                    array_map(function ($v) {
+                        return "<td>{$v}</td>";
+                    }, $row->toArray());
+                    $rowstr .= '</tr>';
+                    $sample[] = $sample;
+                }
+                $sample = implode('', $sample);
+            } else {
+                $sample = $query;
+            }
+        }
+        echo <<<HTML
 
 <!doctype html>
 <html lang="en">
@@ -74,7 +128,7 @@ TABLES;
     <meta name="description" content="">
     <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
     <meta name="generator" content="Hugo 0.88.1">
-    <title>Propel View -  $tablename </title>
+    <title>Proepl View -  $tablename </title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
 
         
@@ -140,10 +194,41 @@ TABLES;
 </ul>
 <div class="tab-content" id="myTabContent">
   <div class="tab-pane fade show active" id="structure" role="tabpanel" aria-labelledby="structure-tab">
-        $columnstable
+
+  <div class="table-responsive">
+        <table class="table table-striped table-sm">
+          <thead>
+            <tr>
+              <th scope="col">PhpName</th>
+              <th scope="col">FQN</th>
+              <th scope="col">Type</th>
+              <th scope="col">Size</th>
+              <th scope="col">Flags</th>
+            </tr>
+          </thead>
+          <tbody>
+                $columns
+          </tbody>
+        </table>
+      </div>
+
   </div>
   <div class="tab-pane fade" id="sample" role="tabpanel" aria-labelledby="sample-tab">
-      $sampletable
+  <div class="table-responsive">
+        <table class="table table-striped table-sm">
+          <thead>
+            <tr>
+             $samplehead
+            </tr>
+          </thead>
+          <tbody>
+                $sample
+          </tbody>
+        </table>
+      </div>
+      
+      
+  
   .</div>
 </div>
 
@@ -160,5 +245,5 @@ TABLES;
 </html>
 
 HTML;
-  }
+    }
 }
